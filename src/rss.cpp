@@ -32,7 +32,7 @@ inline const pugi::xml_node REQUIRENODE(const pugi::xml_node& xmlNode, std::stri
 inline const pugi::xml_attribute REQUIREATTRIB(const pugi::xml_node& xmlNode, std::string name)
 {
     //Throw an error message if the attribute doesn't exist
-    if(xmlNode.attribute(name.c_str()).empty()) throw std::runtime_error( (std::string("XML node \'") + xmlNode.name() + "\' missing required attribute " + name).c_str() ); 
+    if(xmlNode.attribute(name.c_str()).empty()) throw std::runtime_error( (std::string("XML node \'") + xmlNode.name() + "\' missing required attribute: \'" + name + "\'").c_str() ); 
 
     return xmlNode.attribute(name.c_str()); //If no throw, then return the attribute 
 }   
@@ -336,6 +336,8 @@ void RssFeedManager::loadChannelsFromRecord(void)
         size_t lastUpdate; //The last updated time in minutes
 
         std::getline(recordFile, title);
+        if(title.empty()) break; //Don't read final newline as another entry
+        
         std::getline(recordFile, url);
 
         std::getline(recordFile, line); //Get ttl line in file
@@ -359,13 +361,14 @@ void RssFeedManager::loadChannelsFromRecord(void)
         }
         else //Use a cached RSS file if the ttl duration hasn't passed
         {
+            logI("RSS feed \'%s\' TTL is %zu, it has been %zu minutes since the feed was last checked", title.c_str(), ttl, thisMinute - lastUpdate); //Log how long the cached feed has gone without an update
             std::string cachePath = "cached/"; //The cached XML file path
             cachePath.append(title);           //Append the file name  
             cachePath.append(".rss");          //Append the rss extension for clarity
 
             pugi::xml_document doc; //The xml document to load the cache from
             pugi::xml_parse_result res = doc.load_file(cachePath.c_str()); //Load the XML file from the cache
-            if(!res)
+            if(!res) //If the XML parsing failed...
             {
                 //Log the error 
                 logW("Failed to parse cached XML file from %s; error %s, attempting to load from URL instead...", cachePath.c_str(), res.description());
@@ -379,7 +382,7 @@ void RssFeedManager::loadChannelsFromRecord(void)
                     continue; //Continue to next item in the record 
                 }
 
-                logI("Downloaded %s RSS feed from %s after failing to load cached XML", title.c_str(), url.c_str());
+                logI("Downloaded \'%s\' RSS feed from \'%s\' after failing to load cached XML", title.c_str(), url.c_str());
             }
             else
             {
@@ -388,11 +391,11 @@ void RssFeedManager::loadChannelsFromRecord(void)
                     channels.push_back(RssChannel::fromXML(doc, url)); //Make the rss channel from the XML document loaded
                     channels.back().lastChecked = lastUpdate; //Keep the old last checked timestamp after loading from XML
 
-                    logI("RSS channel %s loaded from cached RSS file %s", title.c_str(), cachePath.c_str());
+                    logI("RSS channel \'%s\' loaded from cached RSS file \'%s\'", title.c_str(), cachePath.c_str());
                 }
                 catch(const std::exception& e) //Catch any channel construction errors
                 {
-                    logW("Failed to parse cached XML file at %s; error: %s, falling back to URL...", cachePath.c_str(), e.what());
+                    logW("Failed to parse cached XML file at \'%s\'; error: \'%s\', falling back to URL...", cachePath.c_str(), e.what());
                     try //Try to download the RSS feed instead
                     { 
                         channels.push_back(RssChannel::fromUrl(url)); //Attempt to load the channel from url
@@ -403,7 +406,7 @@ void RssFeedManager::loadChannelsFromRecord(void)
                         continue; //Continue to next item in the record 
                     }
 
-                    logI("Downloaded %s RSS feed from %s after failing to load cached XML", title.c_str(), url.c_str());
+                    logI("Downloaded \'%s\' RSS feed from %s after failing to load cached XML", title.c_str(), url.c_str());
                 }
 
 

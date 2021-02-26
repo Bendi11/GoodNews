@@ -48,6 +48,8 @@ void RssView::init(unsigned int w, unsigned int h)
     ImGui_ImplOpenGL3_Init(glslVersion);          //Init OpenGL3 rendering backend for Dear ImGui
     logI("Dear ImGui OpenGL 3 rendering backend started");
 
+    feedManager.loadChannelsFromRecord();
+
 }
 
 RssView::~RssView()
@@ -66,22 +68,99 @@ void RssView::feedSelectWin(void)
     if(!ImGui::Begin("Select RSS Channel")) //Display the selection window
     return;
 
-    ImGui::ListBoxHeader("RSS Channels"); //Start drawing to a new listbox of RSS channels
-    for(RssChannel& ch : feedManager.channels)
+    size_t idx = 0; //Enumerated index of each channel to select one based on index
+
+    ImGui::Text("RSS Channels");
+    ImGui::ListBoxHeader("", ImVec2(100, 500)); //Start drawing to a new listbox of RSS channels
+    for(auto& ch : feedManager.channels)
     {
         if(ImGui::Selectable(ch.title.c_str())) //If the user selects this RSS channel, display it
         {
-
+            displayedFeed = idx;
         }
-        feedManager.channels.
+        idx++;
     }
     ImGui::ListBoxFooter();
+
+    ImGui::SameLine(); //Display controls for adding RSS feeds to the side of the meny
+    
+    static std::string rssUrl; //The URL to load the RSS feed from
+    ImGui::Text("RSS Feed URL: ");
+        ImGui::SameLine(); //Display controls for adding RSS feeds to the side of the meny
+
+    ImGui::InputText("", &rssUrl); //Prompt the user to enter a URL 
+    if(ImGui::Button("Add RSS Feed"))
+    {
+        if(bgProcess.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) //If the background process is done, launch a new one
+        {
+            bgProcess = std::async(std::launch::async, &RssFeedManager::addChannel, &feedManager, rssUrl); //Add the channel to our list of feeds
+            processString = "Adding RSS Feed From " + rssUrl; //Set the process string to explain what the user is waiting for
+        }
+    }
+
 
     ImGui::End();
 }
 
+void RssView::displayChannel(void)
+{
+    if(displayedFeed >= feedManager.channels.size()) return; //Don't display anything if the index is invalid
+    RssChannel& displayed = feedManager.channels[displayedFeed]; //Get a reference to the displayed channel 
+
+    ImGui::Begin(displayed.title.c_str()); //Begin drawing to a window with the name of the RSS channel
+
+    ImGui::TextColored(ImVec4(0.1f, 0.1f, 1.0f, 1.0f), "Link: %s", displayed.link.c_str()); //Display the link to go to if the user wants to know more
+    if(ImGui::IsItemClicked()) //Check if the link was clicked and open a browser to seach for the link
+    {
+        #ifdef _WIN32
+        ShellExecuteA(NULL, "open", displayed.link.c_str(), NULL, NULL, SW_SHOWNORMAL);
+        #endif
+    }
+
+    ImGui::TextWrapped("Channel Description: %s", displayed.description.c_str());
+
+    ImGui::Separator(); //Sepatate the channel attributes and the items
+
+    size_t idx = 0;
+    for(RssItem& item : displayed.items) //Display every item in the channel
+    {
+        ImGui::TextColored(ImVec4(0.97f, 0.76f, 0.01f, 1.0f), "Title: %s", item.title.c_str()); //Draw the title of the item
+        ImGui::TextColored(ImVec4(0.0f, 0.0f, 1.0f, 1.0f), "Link: %s", item.link.c_str());      //Draw the link of the item
+        if(ImGui::IsItemClicked()) //Check if the link was clicked and open a browser to view it
+        {
+            #ifdef _WIN32
+            ShellExecuteA(NULL, "open", item.link.c_str(), NULL, NULL, SW_SHOWNORMAL);
+            #endif
+        }
+
+        ImGui::TextWrapped("Description: %s", item.description.c_str());
+        if(item.enclosure.filled) //If the image is filled with data, draw it
+        {
+            ImGui::Image((void *)(intptr_t)item.enclosure.txID, ImVec2(maxImageWidth, ((float)item.enclosure.height / (float)item.enclosure.width) * maxImageWidth)); //Draw the image
+            ImGui::TextColored(ImVec4(0.97f, 0.76f, 0.01f, 1.0f), "Title: %s", item.enclosure.title.c_str()); //Draw the title of the picture
+            ImGui::TextWrapped("Description: %s", item.enclosure.description.c_str()); //Draw the description of the image
+        }
+        else if(!item.enclosure.url.empty()) //If there is a url to download image data from, prompt the user to download it
+        {
+            if(ImGui::Button( ("Download Image #" + std::to_string(idx) ).c_str())) //Prompt the user to download the image
+            {
+                item.enclosure.loadImgFromUrl(item.enclosure.url); //Load the image at the URL
+            }
+        }
+        idx++;
+        ImGui::Separator();
+        ImGui::Spacing();
+    }
+
+    ImGui::End();
+}
+
+void unused() {}
+
 void RssView::doLoop(void)
 {
+    bgProcess = std::async(unused);
+
     bool run = true; //If we should continue in the rendering loop
     SDL_Event userInput; //SDL input event queue to send to Dear ImGui
     
@@ -110,14 +189,21 @@ void RssView::doLoop(void)
             ImGui::EndMenu(); //Stop drawing to the menu
         }
 
+        if(bgProcess.wait_for(std::chrono::seconds(0)) != std::future_status::ready) //If a background process is running, display what it is doing
+        {
+            ImGui::Text("Background Process: %s", processString.c_str());
+        }
+
         ImGui::EndMainMenuBar();
 
-
+        feedSelectWin();
+        displayChannel();
 
         ImGui::Render();
         glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y); //Set the OpenGL rendering size to the window size
         glClearColor(0.5f, 0.5f, 0.52f, 1.0f);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(win); //Draw the double buffered frame
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 }

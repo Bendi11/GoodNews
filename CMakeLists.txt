@@ -45,7 +45,7 @@ else()
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 endif()
 
-add_subdirectory(third-party/imgui)
+add_subdirectory(third-party)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE cpr::cpr)
 

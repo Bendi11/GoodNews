@@ -3,8 +3,16 @@
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
+#include "imgui_stdlib.h"
 #include "glad/glad.h"
 #include <SDL.h>
+
+#ifdef _WIN32
+#include "windows.h"
+#endif
+
+#include <future> //For asynchronous processes not freezing the GUI
+#include <chrono>
 
 #include "rss.hpp"
 
@@ -45,10 +53,23 @@ private:
     SDL_GLContext glContext; //The SDL2 OpenGL context object
 
     RssFeedManager feedManager; //The internal RSS feed manager object 
+    size_t displayedFeed;       //The feed that is displayed in the channel view panel
+
+    size_t maxImageWidth = 200; //The maximum an image width can be
 
     /**
      * @brief Method to display a window with list of all subscribed RSS channel titles
      * 
      */
     void feedSelectWin(void);
+
+    /**
+     * @brief Method to display the currently selected channel's 
+     * items in a window
+     * 
+     */
+    void displayChannel(void);
+
+    std::future<void> bgProcess; //Background process to run asynchronously
+    std::string processString;   //The string describing what the background process is doing
 };
