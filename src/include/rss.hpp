@@ -6,11 +6,14 @@
 #include <fstream> //For record file reading
 #include <vector>
 #include <list>
+#include <vector>
 #include <exception>
 #include <chrono> //For timestamps since last checked an RSS channel
 
 #include "pugixml.hpp"
 #include "cpr/cpr.h"
+
+#include "glad/glad.h"
 
 /**
  * @brief Rss Image class, used to encapsulate all data about an image in
@@ -25,6 +28,8 @@ struct RssImage
     std::string url; //Required URL to download image from
 
     std::string description; //Optional description of image contents
+
+    GLuint txID; //OpenGL texture ID
 
     int width = 88; //Optional w of image, default is 88 px
     int height = 31; //Option h of image, default is 31 px
@@ -158,7 +163,7 @@ public:
     RssFeedManager(void);
     ~RssFeedManager();
 
-    std::list<RssChannel> channels; //List of all subscribed channels
+    std::vector<RssChannel> channels; //List of all subscribed channels
 
     /**
      * @brief Method to use subscribed.txt file to load all RSS feeds, either

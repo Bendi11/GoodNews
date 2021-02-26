@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin) #Set output directory to bin folder for compiled binaries
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 project(GoodNews)
 
 if( NOT DEFINED CMAKE_BUILD_TYPE ) #If no build type is specified, build release binaries

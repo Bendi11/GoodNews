@@ -61,6 +61,25 @@ RssView::~RssView()
     SDL_Quit();
 }
 
+void RssView::feedSelectWin(void)
+{
+    if(!ImGui::Begin("Select RSS Channel")) //Display the selection window
+    return;
+
+    ImGui::ListBoxHeader("RSS Channels"); //Start drawing to a new listbox of RSS channels
+    for(RssChannel& ch : feedManager.channels)
+    {
+        if(ImGui::Selectable(ch.title.c_str())) //If the user selects this RSS channel, display it
+        {
+
+        }
+        feedManager.channels.
+    }
+    ImGui::ListBoxFooter();
+
+    ImGui::End();
+}
+
 void RssView::doLoop(void)
 {
     bool run = true; //If we should continue in the rendering loop
@@ -93,11 +112,11 @@ void RssView::doLoop(void)
 
         ImGui::EndMainMenuBar();
 
-        
+
 
         ImGui::Render();
         glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y); //Set the OpenGL rendering size to the window size
-        glClearColor(0.5, 0.5, 0.52, 1.0);
+        glClearColor(0.5f, 0.5f, 0.52f, 1.0f);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(win); //Draw the double buffered frame
     }

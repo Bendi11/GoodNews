@@ -43,4 +43,12 @@ private:
 
     SDL_Window* win = NULL; //The SDL2 window error
     SDL_GLContext glContext; //The SDL2 OpenGL context object
+
+    RssFeedManager feedManager; //The internal RSS feed manager object 
+
+    /**
+     * @brief Method to display a window with list of all subscribed RSS channel titles
+     * 
+     */
+    void feedSelectWin(void);
 };

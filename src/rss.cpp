@@ -116,6 +116,16 @@ void RssImage::loadImgFromUrl(const std::string t_url)
 
     unsigned char* imgDat = stbi_load("cache", &width, &height, &ch, 4); //Re load the image data from the cache file
     if(imgDat == NULL) throw std::runtime_error("Failed to load image data from cache file!"); //Throw an error if stb_image somehow fails
+
+    glGenTextures(1, &txID); //Generate a texture ID in openGL
+    glBindTexture(GL_TEXTURE_2D, txID); 
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Same
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgDat); //Generate an OpenGL texture using the image data
     
     stbi_image_free(imgDat); //No memory leaks here 
 
@@ -300,40 +310,11 @@ void RssFeedManager::removeChannel(const std::string title)
     std::ofstream tempFile("temp.txt"); //We write to a temporary file to remove the element by not writing it to the new file
 
     //Remove an element from the list if the title matches the title given
-    channels.remove_if([&](const RssChannel& ch) -> bool 
+    std::remove_if(channels.begin(), channels.end(), [&](const RssChannel& ch) -> bool 
     {
         if(ch.title.compare(title) == 0) return true;
         else                             return false;
     });
-
-    /*recordFile.seekg(0); //Return to beginning of file to read it and remove the channel
-    std::string read;    //The string that we have read from the line
-
-    while(std::getline(recordFile, read)) //Read through every title in the record file
-    {
-        if(read.compare(title) == 0)    //If the string title matches the title given to us, remove the record
-        {
-            std::getline(recordFile, read); //Read over the next two lines
-            std::getline(recordFile, read); //Read over the ttl
-            std::getline(recordFile, read); //Read over the last checked
-        }
-        else //Write the entry and don't ignore it if we aren't removing this entry
-        {
-            tempFile << read << std::endl;
-            for(int i = 0; i < 3; ++i) //Write the rest of the data to the file
-            {
-                std::getline(recordFile, read);
-                tempFile << read << std::endl;
-            }
-        }
-    }
-
-    tempFile.close();
-    recordFile.close();
-    
-    remove("subscribed.txt"); //Delete the old record file
-    rename("temp.txt", "subscribed.txt"); //Replace the record file with the temp file
-    recordFile.open("subscribed.txt", std::ios::app | std::ios_base::out | std::ios_base::in);    //Reopen the record file object using the new record file*/
 }
 
 void RssFeedManager::loadChannelsFromRecord(void)
