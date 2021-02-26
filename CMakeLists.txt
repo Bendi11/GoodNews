@@ -44,8 +44,8 @@ else()
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 endif()
 
-set(wxBUILD_SHARED OFF CACHE INTERNAL "")
-add_subdirectory(third-party/wxWindows)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE wx::core wx::html wx::base wx::net wx::webview)
+set(wxBUILD_SHARED OFF CACHE INTERNAL "") #Build static wxWidgets
+add_subdirectory(third-party/wxWidgets)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE wx::core wx::base wx::net wx::webView)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE cpr::cpr)
 
