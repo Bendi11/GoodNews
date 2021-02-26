@@ -1,0 +1,27 @@
+VS_VERSION_INFO VERSIONINFO
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+{
+    BLOCK "StringFileInfo"
+    { 
+        BLOCK "040904b0"
+        {
+            VALUE "Comments",         "\0"
+            VALUE "CompanyName",      "Bendi11\0"
+            VALUE "FileDescription",  "Program to get the good news\0"
+            VALUE "FileVersion",      "\0"
+            VALUE "InternalName",     "GoodNews.exe\0"
+            VALUE "LegalCopyright",   "none\0"
+            VALUE "OriginalFilename", "GoodNews.exe\0"
+            VALUE "ProductName",      "Good News\0"
+            VALUE "ProductVersion",   "\0"
+        } 
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
+
+MAINICON ICON "res/papericon.ico"
