@@ -71,7 +71,7 @@ RssView::~RssView()
 
 void RssView::feedSelectWin(void)
 {
-    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x / 4, ImGui::GetIO().DisplaySize.y);
+    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x / 4, ImGui::GetIO().DisplaySize.y - mainMenuSize.y);
     ImGui::SetNextWindowSize(paneSize); //Set the size to 1 / 4 of the screen size
     ImGui::SetNextWindowPos(ImVec2(0, 0 + mainMenuSize.y) ); //Display just under the main menu bar
     if(!ImGui::Begin("Select RSS Channel", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize)) //Display the selection window
@@ -122,7 +122,7 @@ void RssView::displayChannel(void)
     if(displayedFeed >= feedManager.channels.size()) return; //Don't display anything if the index is invalid
     RssChannel& displayed = feedManager.channels[displayedFeed]; //Get a reference to the displayed channel 
 
-    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x * 3.f/4.f, ImGui::GetIO().DisplaySize.y); //Size of this pane
+    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x * 3.f/4.f, ImGui::GetIO().DisplaySize.y - mainMenuSize.y); //Size of this pane
 
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 4, 0 + mainMenuSize.y)); //Display just below the main menu bar
     ImGui::SetNextWindowSize(paneSize);
