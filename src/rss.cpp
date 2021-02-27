@@ -307,14 +307,13 @@ void RssFeedManager::addChannel(const std::string link)
 
 void RssFeedManager::removeChannel(const std::string title)
 {
-    std::ofstream tempFile("temp.txt"); //We write to a temporary file to remove the element by not writing it to the new file
-
     //Remove an element from the list if the title matches the title given
+    channels.erase(
     std::remove_if(channels.begin(), channels.end(), [&](const RssChannel& ch) -> bool 
     {
         if(ch.title.compare(title) == 0) return true;
         else                             return false;
-    });
+    }), channels.end());
 }
 
 void RssFeedManager::loadChannelsFromRecord(void)

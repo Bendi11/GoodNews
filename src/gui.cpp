@@ -48,7 +48,8 @@ void RssView::init(unsigned int w, unsigned int h)
     ImGui_ImplOpenGL3_Init(glslVersion);          //Init OpenGL3 rendering backend for Dear ImGui
     logI("Dear ImGui OpenGL 3 rendering backend started");
 
-    feedManager.loadChannelsFromRecord();
+    bgProcess = std::async(std::launch::async, &RssFeedManager::loadChannelsFromRecord, &feedManager); //Load all RSS feeds in the background
+    processString = "Loading RSS channels...";
 
 }
 
@@ -65,13 +66,16 @@ RssView::~RssView()
 
 void RssView::feedSelectWin(void)
 {
-    if(!ImGui::Begin("Select RSS Channel")) //Display the selection window
+    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x / 4, ImGui::GetIO().DisplaySize.y);
+    ImGui::SetNextWindowSize(paneSize); //Set the size to 1 / 4 of the screen size
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    if(!ImGui::Begin("Select RSS Channel", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize)) //Display the selection window
     return;
 
     size_t idx = 0; //Enumerated index of each channel to select one based on index
 
     ImGui::Text("RSS Channels");
-    ImGui::ListBoxHeader("", ImVec2(100, 500)); //Start drawing to a new listbox of RSS channels
+    ImGui::ListBoxHeader("", ImVec2(paneSize.x, paneSize.y * (3 / 4))); //Start drawing to a new listbox of RSS channels
     for(auto& ch : feedManager.channels)
     {
         if(ImGui::Selectable(ch.title.c_str())) //If the user selects this RSS channel, display it
@@ -82,12 +86,17 @@ void RssView::feedSelectWin(void)
     }
     ImGui::ListBoxFooter();
 
-    ImGui::SameLine(); //Display controls for adding RSS feeds to the side of the meny
+    if(ImGui::Button("Remove selected RSS feed")) //If the user wants to delete this subscription
+    {
+        if(displayedFeed < feedManager.channels.size()) //Only remove the channel if it is valid
+            feedManager.removeChannel(feedManager.channels[displayedFeed].title); //Remove the channel with the specified index
+    }
+
+    ImGui::Spacing();
+
     
     static std::string rssUrl; //The URL to load the RSS feed from
     ImGui::Text("RSS Feed URL: ");
-        ImGui::SameLine(); //Display controls for adding RSS feeds to the side of the meny
-
     ImGui::InputText("", &rssUrl); //Prompt the user to enter a URL 
     if(ImGui::Button("Add RSS Feed"))
     {
@@ -107,7 +116,11 @@ void RssView::displayChannel(void)
     if(displayedFeed >= feedManager.channels.size()) return; //Don't display anything if the index is invalid
     RssChannel& displayed = feedManager.channels[displayedFeed]; //Get a reference to the displayed channel 
 
-    ImGui::Begin(displayed.title.c_str()); //Begin drawing to a window with the name of the RSS channel
+    ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x * 3.f/4.f, ImGui::GetIO().DisplaySize.y); //Size of this pane
+
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 4, 0)); 
+    ImGui::SetNextWindowSize(paneSize);
+    ImGui::Begin(displayed.title.c_str(), (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize); //Begin drawing to a window with the name of the RSS channel
 
     ImGui::TextColored(ImVec4(0.1f, 0.1f, 1.0f, 1.0f), "Link: %s", displayed.link.c_str()); //Display the link to go to if the user wants to know more
     if(ImGui::IsItemClicked()) //Check if the link was clicked and open a browser to seach for the link
@@ -136,7 +149,7 @@ void RssView::displayChannel(void)
         ImGui::TextWrapped("Description: %s", item.description.c_str());
         if(item.enclosure.filled) //If the image is filled with data, draw it
         {
-            ImGui::Image((void *)(intptr_t)item.enclosure.txID, ImVec2(maxImageWidth, ((float)item.enclosure.height / (float)item.enclosure.width) * maxImageWidth)); //Draw the image
+            ImGui::Image((void *)(intptr_t)item.enclosure.txID, ImVec2((float)maxImageWidth, ((float)item.enclosure.height / (float)item.enclosure.width) * maxImageWidth)); //Draw the image
             ImGui::TextColored(ImVec4(0.97f, 0.76f, 0.01f, 1.0f), "Title: %s", item.enclosure.title.c_str()); //Draw the title of the picture
             ImGui::TextWrapped("Description: %s", item.enclosure.description.c_str()); //Draw the description of the image
         }
@@ -159,7 +172,8 @@ void unused() {}
 
 void RssView::doLoop(void)
 {
-    bgProcess = std::async(unused);
+    //if(!bgProcess.valid())
+        //bgProcess = std::async(unused);
 
     bool run = true; //If we should continue in the rendering loop
     SDL_Event userInput; //SDL input event queue to send to Dear ImGui
