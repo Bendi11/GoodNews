@@ -244,7 +244,7 @@ RssChannel RssChannel::fromXML(const pugi::xml_document& xmlDoc, const std::stri
     {
         throw e;
     }
-
+    
     return retChannel;
 }   
 
@@ -296,6 +296,10 @@ void RssFeedManager::addChannel(const std::string link)
     try
     {
         RssChannel ch = RssChannel::fromUrl(link); //Attempt to create an RSS channel from the XML document
+        for(RssChannel& match : channels) //Make sure that we don't add the same RSS feed twice
+        {
+            if(ch.title.compare(match.title) == 0) return; 
+        }
         channels.push_back(ch);                     //Add the channel to our list if it was created 
 
     }

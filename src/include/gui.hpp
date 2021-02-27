@@ -48,6 +48,7 @@ private:
 
     unsigned int screenWidth; //Screen dimensions
     unsigned int screenHeight;
+    ImVec2 mainMenuSize; //The size of the main menu bar for positioning windows
 
     SDL_Window* win = NULL; //The SDL2 window error
     SDL_GLContext glContext; //The SDL2 OpenGL context object
@@ -72,4 +73,10 @@ private:
 
     std::future<void> bgProcess; //Background process to run asynchronously
     std::string processString;   //The string describing what the background process is doing
+
+    bool bLoadAllImages = false; //If we should load every image in a channel by default
+    bool bShowSettings = false;  //If we should show the settings screen\
+
+    ImFont* bold = NULL;   //Dear ImGui bold font
+    ImFont* normal = NULL; //Dear ImGui normal font
 };

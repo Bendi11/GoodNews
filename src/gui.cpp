@@ -48,8 +48,13 @@ void RssView::init(unsigned int w, unsigned int h)
     ImGui_ImplOpenGL3_Init(glslVersion);          //Init OpenGL3 rendering backend for Dear ImGui
     logI("Dear ImGui OpenGL 3 rendering backend started");
 
+    ImGuiIO& io = ImGui::GetIO();
+    normal = io.Fonts->AddFontFromFileTTF("times-new-roman.ttf", 18.f);
+    //bold = io.Fonts->AddFontFromFileTTF("FreeSansBold-Xgdd.ttf", 24);
+
     bgProcess = std::async(std::launch::async, &RssFeedManager::loadChannelsFromRecord, &feedManager); //Load all RSS feeds in the background
     processString = "Loading RSS channels...";
+
 
 }
 
@@ -68,7 +73,7 @@ void RssView::feedSelectWin(void)
 {
     ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x / 4, ImGui::GetIO().DisplaySize.y);
     ImGui::SetNextWindowSize(paneSize); //Set the size to 1 / 4 of the screen size
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0 + mainMenuSize.y) ); //Display just under the main menu bar
     if(!ImGui::Begin("Select RSS Channel", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize)) //Display the selection window
     return;
 
@@ -104,6 +109,7 @@ void RssView::feedSelectWin(void)
         {
             bgProcess = std::async(std::launch::async, &RssFeedManager::addChannel, &feedManager, rssUrl); //Add the channel to our list of feeds
             processString = "Adding RSS Feed From " + rssUrl; //Set the process string to explain what the user is waiting for
+            rssUrl.clear(); //Empty the URL field
         }
     }
 
@@ -118,9 +124,16 @@ void RssView::displayChannel(void)
 
     ImVec2 paneSize = ImVec2(ImGui::GetIO().DisplaySize.x * 3.f/4.f, ImGui::GetIO().DisplaySize.y); //Size of this pane
 
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 4, 0)); 
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 4, 0 + mainMenuSize.y)); //Display just below the main menu bar
     ImGui::SetNextWindowSize(paneSize);
     ImGui::Begin(displayed.title.c_str(), (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoMove | ImGuiWindowFlags_::ImGuiWindowFlags_NoResize); //Begin drawing to a window with the name of the RSS channel
+
+    maxImageWidth = (size_t)( (int)paneSize.x / 3); //Set images to be 1 / 3 the size of the window
+
+    /*if(displayed.image.filled)
+    {
+        ImGui::Image((void*)(intptr_t)displayed.image.txID, ImVec2(maxImageWidth, ((float)displayed.image.height / (float)displayed.image.width) * maxImageWidth));
+    }*/
 
     ImGui::TextColored(ImVec4(0.1f, 0.1f, 1.0f, 1.0f), "Link: %s", displayed.link.c_str()); //Display the link to go to if the user wants to know more
     if(ImGui::IsItemClicked()) //Check if the link was clicked and open a browser to seach for the link
@@ -150,7 +163,6 @@ void RssView::displayChannel(void)
         if(item.enclosure.filled) //If the image is filled with data, draw it
         {
             ImGui::Image((void *)(intptr_t)item.enclosure.txID, ImVec2((float)maxImageWidth, ((float)item.enclosure.height / (float)item.enclosure.width) * maxImageWidth)); //Draw the image
-            ImGui::TextColored(ImVec4(0.97f, 0.76f, 0.01f, 1.0f), "Title: %s", item.enclosure.title.c_str()); //Draw the title of the picture
             ImGui::TextWrapped("Description: %s", item.enclosure.description.c_str()); //Draw the description of the image
         }
         else if(!item.enclosure.url.empty()) //If there is a url to download image data from, prompt the user to download it
@@ -168,7 +180,6 @@ void RssView::displayChannel(void)
     ImGui::End();
 }
 
-void unused() {}
 
 void RssView::doLoop(void)
 {
@@ -192,12 +203,17 @@ void RssView::doLoop(void)
         ImGui::NewFrame();
 
         ImGui::BeginMainMenuBar(); //Start the main menu bar
+        mainMenuSize = ImGui::GetWindowSize(); //Get how large the main menu bar is being drawn
  
         if(ImGui::BeginMenu("Options")) //Begin the options bar
         {
             if(ImGui::MenuItem("Quit", "Alt+f4")) //Prompt the user to quit the application
             {
                 run = false; //Quit the program
+            }
+            if(ImGui::MenuItem("Settings"))
+            {
+                bShowSettings = (bShowSettings) ? false : true; //Toggle the value of 'show settings'
             }
 
             ImGui::EndMenu(); //Stop drawing to the menu
@@ -209,6 +225,14 @@ void RssView::doLoop(void)
         }
 
         ImGui::EndMainMenuBar();
+
+        if(bShowSettings)
+        {
+            ImGui::Begin("Settings", &bShowSettings); //Show settings window if the user wants to edit settings
+            ImGui::Checkbox("Load all images when loading a new RSS feed", &bLoadAllImages); //Allow the user to toggle if we should load every image when loading a new feed
+            ImGui::End();
+        }
+        
 
         feedSelectWin();
         displayChannel();
